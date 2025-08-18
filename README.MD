@@ -1,37 +1,53 @@
-# Smart Content Moderator
+# Smart Content Moderator API
 
-Smart Content Moderator is an AI-powered tool designed to automatically detect and filter inappropriate or harmful content in text, images, or other media. It leverages advanced machine learning models to help maintain safe and respectful environments across digital platforms.
+## Overview
+A Django-based API that analyzes user-submitted text and images for inappropriate content using Gemini LLM. 
+It stores moderation results in PostgreSQL, uses Redis + Celery for async tasks, and sends Slack alerts when flagged.
 
-## Features
+## Core Stack
+- Django + Django REST Framework  
+- PostgreSQL (database)  
+- Redis + Celery (async background tasks)  
+- Google Gemini API (content classification)  
+- Slack Webhooks (notifications)  
+- Docker Compose (container orchestration)  
 
-- **Text Moderation:** Detects hate speech, profanity, spam, and other unwanted content.
-- **Image Moderation:** Identifies explicit or inappropriate images (if implemented).
-- **Customizable Rules:** Adapt moderation policies to fit your platform's needs.
-- **Real-time Processing:** Fast and scalable moderation for high-traffic applications.
-- **Easy Integration:** Simple APIs for seamless integration with your existing systems.
+## Environment Variables
+Set environment variable, look into .env.example for sample
 
-## Installation
+## Setup Instructions
+1. Copy `.env.example` to `.env` and fill values.  
+2. Build and start containers:  
+   ```bash
+   docker compose up --build -d
+   ```
+3. Apply migrations:  
+   ```bash
+   docker compose exec web python manage.py migrate
+   ```
+4. Access API at [http://localhost:8000/api/v1/](http://localhost:8000/api/v1/)
 
-1. Clone the repository:
-    ```bash
-    git clone https://github.com/Muskan2320/Smart-Content-Moderator.git
-    cd smart_content_moderator
-    ```
-2. Install dependencies:
-    ```bash
-    pip install -r requirements.txt
-    ```
+## API Endpoints
+- **POST** `/api/v1/moderate/text` → `{ email, text }`  
+- **POST** `/api/v1/moderate/image` → multipart `{ email, image }`  
+- **GET** `/api/v1/analytics/summary?user=<email>` → analytics summary  
 
-## Usage
+## Testing Examples
+```bash
+curl -X POST http://localhost:8000/api/v1/moderate/text   -H "Content-Type: application/json"   -d '{"email":"me@test.com","text":"I hate you"}'
 
-```python
-from moderator import ContentModerator
+curl -X POST http://localhost:8000/api/v1/moderate/image   -F email=me@test.com   -F image=@/path/to/file.jpg
 
-moderator = ContentModerator()
-result = moderator.moderate_text("Your text here")
-print(result)
+curl http://localhost:8000/api/v1/analytics/summary?user=me@test.com
 ```
 
-## Configuration
+## Notifications
+Slack alerts are triggered automatically when classification is **toxic**, **spam**, or **harassment**.  
+Ensure `SLACK_WEBHOOK_URL` is correctly configured.
 
-- Edit `config.yaml` to customize moderation thresholds and rules.
+## Development Notes
+- Use Django `runserver` for hot reload during development.  
+- In production, web runs with Gunicorn.  
+- Postgres/Redis service names in Docker Compose are `db` and `redis`.  
+- Supported image types: JPEG, PNG, WEBP.  
+- Classification results stored with confidence + reasoning.  

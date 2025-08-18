@@ -1,0 +1,11 @@
+.git
+__pycache__/
+*.py[cod]
+venv/
+.venv/
+smart_moderator_venv/
+.env
+media/
+staticfiles/
+index/
+**/*.index

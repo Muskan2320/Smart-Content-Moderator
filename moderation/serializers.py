@@ -13,20 +13,24 @@ class TextModerateIn(serializers.Serializer):
 
 class ImageModerateIn(serializers.Serializer):
     email = serializers.EmailField()
-    image = serializers.ImageField(required=False)        # file upload
-    image_url = serializers.URLField(required=False)      # remote URL
+    image = serializers.ImageField()  # multipart/form-data
 
-    def validate(self, attrs):
-        if not attrs.get("image") and not attrs.get("image_url"):
-            raise serializers.ValidationError({"image": "Provide either image or image_url."})
-        return attrs
+    def validate_image(self, f):
+        max_mb = 8
+        if f.size and f.size > max_mb * 1024 * 1024:
+            raise serializers.ValidationError(f"image larger than {max_mb}MB")
+
+        allowed_types = {"image/jpeg", "image/png", "image/webp"}
+        if hasattr(f, "content_type") and f.content_type not in allowed_types:
+            raise serializers.ValidationError("Only JPEG, PNG, or WEBP images are allowed.")
+        return f
 
 class SummaryQuery(serializers.Serializer):
     user = serializers.EmailField()
 
 
 class ModerateResponseOut(serializers.Serializer):
-    requeest_id = serializers.IntegerField()
+    request_id = serializers.IntegerField()
     classification = serializers.ChoiceField(choices=("toxic", "spam", "harassment", "safe"))
 
     confidence = serializers.FloatField(min_value=0.0, max_value=1.0)
